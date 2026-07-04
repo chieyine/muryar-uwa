@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  fullName     String
+  email        String    @unique
+  password     String
+  phone        String?
+  role         String    // ADMIN, SUPERVISOR, CHEW, MIDWIFE, MOBILIZER, PHC_BOARD_VIEWER
+  lgaId        String?
+  facilityId   String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  lga          LGA?      @relation(fields: [lgaId], references: [id])
+  facility     Facility? @relation(fields: [facilityId], references: [id])
+
+  registeredWomen     Woman[]                        @relation("RegisteredBy")
+  assessedSafeContacts SafeContactAssessment[]       @relation("AssessedBy")
+  screenedNutrition   NutritionScreening[]           @relation("ScreenedBy")
+  createdReferrals    Referral[]                     @relation("ReferralCreatedBy")
+  assignedReferrals   Referral[]                     @relation("ReferralAssignedTo")
+  updatedReferrals    ReferralUpdate[]               @relation("ReferralUpdatedBy")
+  recordedResilience  NutritionResilienceActivity[]  @relation("RecordedBy")
+  assignedMissedVisits MissedVisit[]                 @relation("MissedVisitAssignedTo")
+  assignedComplaints  ComplaintOrSafeguardingFlag[]  @relation("ComplaintAssignedTo")
+  createdComplaints   ComplaintOrSafeguardingFlag[]  @relation("ComplaintCreatedBy")
+}
+
+model LGA {
+  id         String     @id @default(uuid())
+  name       String     @unique
+  state      String     @default("Borno")
+  facilities Facility[]
+  users      User[]
+  women      Woman[]
+}
+
+model Facility {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  lgaId       String
+  type        String   // PHC, SC, OTP, OUTREACH_POINT
+  hasStarlink Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  lga         LGA      @relation(fields: [lgaId], references: [id])
+  users       User[]
+  women       Woman[]
+}
+
+model Woman {
+  id                    String   @id @default(uuid())
+  uniqueCode            String   @unique
+  fullName              String?
+  codedName             String?
+  age                   Int
+  phone                 String?
+  alternatePhone        String?
+  lgaId                 String
+  facilityId            String
+  community             String
+  pregnancyStatus       String   // PREGNANT, NOT_PREGNANT, UNKNOWN
+  breastfeedingStatus   String   // BREASTFEEDING, NOT_BREASTFEEDING, UNKNOWN
+  caregiverStatus       Boolean  @default(false)
+  childInOtp            Boolean  @default(false)
+  childDischargedFromSc Boolean  @default(false)
+  consentGiven          Boolean  @default(false)
+  preferredLanguage     String   // HAUSA, KANURI, FULFULDE, ENGLISH
+  preferredChannel      String   // VOICE, IVR, SMS, WHATSAPP_VOICE, MOBILIZER
+  safeContactStatus     String   // DIRECT_SAFE, NEUTRAL_ONLY, MOBILIZER_ONLY, NO_DIRECT_CONTACT, OPTED_OUT
+  safeContactTime       String?
+  registeredByUserId    String
+  registrationDate      DateTime @default(now())
+  status                String   @default("ACTIVE") // ACTIVE, INACTIVE, TRANSFERRED, OPTED_OUT
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  lga                  LGA                         @relation(fields: [lgaId], references: [id])
+  facility             Facility                    @relation(fields: [facilityId], references: [id])
+  registeredBy         User                        @relation("RegisteredBy", fields: [registeredByUserId], references: [id])
+  safeContactAssessments SafeContactAssessment[]
+  nutritionScreenings  NutritionScreening[]
+  referrals            Referral[]
+  messageLogs          MessageLog[]
+  resilienceActivities NutritionResilienceActivity[]
+  missedVisits         MissedVisit[]
+  complaints           ComplaintOrSafeguardingFlag[]
+}
+
+model SafeContactAssessment {
+  id                         String   @id @default(uuid())
+  womanId                    String
+  ownsPhone                  Boolean
+  sharedPhone                Boolean
+  sharedWith                 String?
+  safeForCalls               Boolean
+  safeForSms                 Boolean
+  safeForWhatsapp            Boolean
+  preferredTime              String?
+  neutralMessagesOnly        Boolean
+  unsafeTopics               String?
+  mobilizerFollowUpPreferred Boolean  @default(false)
+  directContactAllowed       Boolean  @default(true)
+  assessedByUserId           String
+  assessedAt                 DateTime @default(now())
+
+  woman                      Woman    @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  assessedBy                 User     @relation("AssessedBy", fields: [assessedByUserId], references: [id])
+}
+
+model NutritionScreening {
+  id                      String   @id @default(uuid())
+  womanId                 String
+  muacCm                  Float?
+  oedema                  Boolean  @default(false)
+  visiblyWasted           Boolean  @default(false)
+  appetiteConcern         Boolean  @default(false)
+  pregnantOrBreastfeeding Boolean  @default(false)
+  householdFoodInsecurity Boolean  @default(false)
+  riskCategory            String   // NORMAL, AT_RISK, MODERATE_CONCERN, SEVERE_CONCERN, URGENT_REFERRAL
+  screenedByUserId        String
+  screenedAt              DateTime @default(now())
+  nextScreeningDate       DateTime?
+
+  woman                   Woman    @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  screenedBy              User     @relation("ScreenedBy", fields: [screenedByUserId], references: [id])
+}
+
+model Referral {
+  id              String   @id @default(uuid())
+  womanId         String
+  referralType    String   // ANC, PNC, PHC_REVIEW, NUTRITION_COUNSELLING, MUAC_RECHECK, OTP_FOLLOW_UP, SC_FOLLOW_UP, TOM_BROWN_DEMO, SEEDLING_SUPPORT, FSL_SOCIAL_PROTECTION, PROTECTION, EMERGENCY
+  priority        String   // LOW, MEDIUM, HIGH, URGENT
+  status          String   // IDENTIFIED, COUNSELLED, REFERRED, MESSAGE_SENT, REACHED, ATTENDED, COMPLETED, NOT_REACHED, ESCALATED, CLOSED
+  reason          String
+  destination     String?
+  dueDate         DateTime?
+  createdByUserId String
+  assignedToUserId String?
+  completedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  woman           Woman    @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  createdBy       User     @relation("ReferralCreatedBy", fields: [createdByUserId], references: [id])
+  assignedTo      User?    @relation("ReferralAssignedTo", fields: [assignedToUserId], references: [id])
+  updates         ReferralUpdate[]
+}
+
+model ReferralUpdate {
+  id              String   @id @default(uuid())
+  referralId      String
+  status          String
+  note            String
+  updatedByUserId String
+  createdAt       DateTime @default(now())
+
+  referral        Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  updatedBy       User     @relation("ReferralUpdatedBy", fields: [updatedByUserId], references: [id])
+}
+
+model MessageTemplate {
+  id          String   @id @default(uuid())
+  title       String
+  category    String   // ANC_REMINDER, PNC_REMINDER, OTP_REMINDER, SC_FOLLOWUP, MATERNAL_NUTRITION, BREASTFEEDING, COMPLEMENTARY_FEEDING, DANGER_SIGNS, TOM_BROWN, SEEDLING, HYGIENE, SAFE_CONTACT
+  language    String   // HAUSA, KANURI, FULFULDE, ENGLISH
+  channel     String   // VOICE, IVR, SMS, WHATSAPP_VOICE
+  contentText String
+  audioUrl    String?
+  isActive    Boolean  @default(true)
+
+  messageLogs MessageLog[]
+}
+
+model MessageLog {
+  id                String    @id @default(uuid())
+  womanId           String
+  templateId        String
+  channel           String    // VOICE, IVR, SMS, WHATSAPP_VOICE, MOBILIZER
+  scheduledAt       DateTime
+  sentAt            DateTime?
+  deliveryStatus    String    // PENDING, SENT, DELIVERED, FAILED, SKIPPED_UNSAFE, MOBILIZER_ASSIGNED
+  responseStatus    String?   // NO_RESPONSE, CONFIRMED, CALLBACK_REQUESTED, HELP_NEEDED
+  providerMessageId String?
+  createdAt         DateTime  @default(now())
+
+  woman             Woman           @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  template          MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model NutritionResilienceActivity {
+  id                String    @id @default(uuid())
+  womanId           String
+  activityType      String    // TOM_BROWN_DEMO, LOCAL_FOOD_DEMO, MUAC_FOLLOWUP, SEEDLING_SUPPORT, SACK_GARDEN_SUPPORT, NUTRITION_GROUP, FSL_REFERRAL, SOCIAL_PROTECTION_REFERRAL
+  eligibilityReason String    // LOW_MUAC, PREGNANT, BREASTFEEDING, CAREGIVER_OF_SAM_CHILD, SC_DISCHARGE_CAREGIVER, HOUSEHOLD_FOOD_INSECURITY, SUPERVISOR_APPROVED
+  status            String    // PLANNED, ATTENDED, RECEIVED, REFERRED, COMPLETED, MISSED
+  activityDate      DateTime
+  followUpDate      DateTime?
+  notes             String?
+  recordedByUserId  String
+  createdAt         DateTime  @default(now())
+
+  woman             Woman     @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  recordedBy        User      @relation("RecordedBy", fields: [recordedByUserId], references: [id])
+}
+
+model MissedVisit {
+  id                   String    @id @default(uuid())
+  womanId              String
+  visitType            String    // ANC, PNC, OTP, SC_FOLLOWUP, MUAC_RECHECK, TOM_BROWN_DEMO, REFERRAL_APPOINTMENT
+  expectedDate         DateTime
+  status               String    // OPEN, CONTACTED, RESCHEDULED, COMPLETED, ESCALATED, CLOSED
+  assignedToUserId     String?
+  reasonForMissedVisit String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  woman                Woman     @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  assignedTo           User?     @relation("MissedVisitAssignedTo", fields: [assignedToUserId], references: [id])
+}
+
+model ComplaintOrSafeguardingFlag {
+  id               String    @id @default(uuid())
+  womanId          String?
+  type             String    // COMPLAINT, SAFE_CONTACT_CONCERN, GBV_DISCLOSURE, DATA_PRIVACY, STAFF_CONDUCT, FRAUD, OTHER
+  severity         String    // LOW, MEDIUM, HIGH, CRITICAL
+  description      String
+  status           String    // OPEN, IN_REVIEW, REFERRED, RESOLVED, CLOSED
+  assignedToUserId String?
+  createdByUserId  String
+  createdAt        DateTime  @default(now())
+  closedAt         DateTime?
+
+  woman            Woman?    @relation(fields: [womanId], references: [id], onDelete: Cascade)
+  assignedTo       User?     @relation("ComplaintAssignedTo", fields: [assignedToUserId], references: [id])
+  createdBy        User      @relation("ComplaintCreatedBy", fields: [createdByUserId], references: [id])
+}
