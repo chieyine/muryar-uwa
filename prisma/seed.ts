@@ -419,11 +419,20 @@ async function main() {
   console.log("Database seeded successfully!");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+export async function seedDatabase() {
+  // Ensure we clean and seed the database using the hybrid client
+  await main();
+}
+
+// Only run automatically if executed directly via CLI
+const isDirectRun = process.argv[1] && (process.argv[1].endsWith("seed.ts") || process.argv[1].endsWith("seed.js"));
+if (isDirectRun) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

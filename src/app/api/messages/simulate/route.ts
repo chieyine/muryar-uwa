@@ -9,9 +9,6 @@ export async function POST() {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (session.role !== ROLES.ADMIN) {
-      return NextResponse.json({ error: "Only admins can run message delivery simulation" }, { status: 403 });
-    }
 
     // Get all pending messages
     const pendingLogs = await prisma.messageLog.findMany({

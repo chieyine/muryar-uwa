@@ -5,7 +5,7 @@ import { generateToken, getSession, setSessionCookie } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session || session.role !== "ADMIN") {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
