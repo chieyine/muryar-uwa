@@ -69,15 +69,11 @@ function LoginForm() {
           </div>
 
           <div className="space-y-4">
-            <p className="section-kicker">Grant demo workspace</p>
             <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-              Women-centered follow-up and nutrition resilience
+              Prototype Demo
             </h2>
             <p className="text-sm leading-6 text-slate-600">
-              Muryar Uwa is a secure digital agency platform designed to track and support pregnant women, breastfeeding mothers, and vulnerable caregivers. 
-            </p>
-            <p className="text-sm leading-6 text-slate-600">
-              By enabling safe contact assessments, voice-first pathways, nutritional screening, and persistent referrals, we bridge the gap between primary health care and community outreach.
+              This is a simulated demonstration of the proposed Muryar Uwa platform. It contains no real participant data and is intended to show the planned user journey and dashboard workflows.
             </p>
           </div>
         </div>
