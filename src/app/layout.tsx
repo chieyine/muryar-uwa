@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Muryar Uwa - Digital Health & Nutrition Follow-Up",
-  description: "A secure, voice-first digital follow-up platform supporting mothers, pregnant women, and caregivers across Primary Health Care centers.",
+  description: "A secure, voice-first digital follow-up platform supporting mothers, pregnant women, and caregivers across Primary Health Care centers in Borno State.",
   keywords: [
     "Muryar Uwa",
     "FRAD Foundation",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
     "MUAC Screening",
     "Tom Brown Demonstration",
     "Secondary Care Referrals",
+    "Borno State",
   ],
   authors: [{ name: "FRAD Foundation Team" }],
 };
@@ -31,6 +33,7 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col selection:bg-emerald-500 selection:text-white">
         {children}
+        <Analytics />
       </body>
     </html>
   );
