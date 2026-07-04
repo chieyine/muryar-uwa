@@ -4,12 +4,17 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 const createPrismaClient = () => {
   const connectionUrl = process.env.DATABASE_URL || "";
-  const isPostgres = connectionUrl.startsWith("postgres://") || connectionUrl.startsWith("postgresql://");
+  const isPostgres = connectionUrl.startsWith("postgres://") || 
+                     connectionUrl.startsWith("postgresql://") || 
+                     process.env.VERCEL === "1";
 
   if (isPostgres) {
     const { Pool } = require("pg");
     const { PrismaPg } = require("@prisma/adapter-pg");
-    const pool = new Pool({ connectionString: connectionUrl });
+    // Fallback connection string avoids crashing instantiation when DATABASE_URL is empty during Vercel build phase
+    const pool = new Pool({ 
+      connectionString: connectionUrl || "postgresql://postgres:postgres@localhost:5432/postgres" 
+    });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
   }
